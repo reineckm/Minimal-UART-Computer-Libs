@@ -1,0 +1,140 @@
+; Graphics Routines
+; Some Routines for drawing Shapes
+; author reineckm
+; 
+
+;-----------------------------------------------------------------
+; Test / Demo Program - Lib starts after that
+
+*=$0000                     ; Registers like in 6502 zero page
+x: 0
+y: 0
+w: 0
+h: 0
+a: 0
+b: 0
+c: 0
+
+*=$0100			            ; code starts here
+        LDI $fe STA $7fff	; init stack
+start:  LDI 27 OUT			; ESC sequence for "home"
+        LDI '[' OUT			
+        LDI 'H' OUT			
+        LDI 27 OUT			; ESC sequence for "clear screen"			
+        LDI '[' OUT			
+        LDI 'J' OUT
+        
+        LDI 5 STA x         ; draw 2 boxes overlapping
+        LDI 4 STA y
+        LDI 10 STA w
+        LDI 8 STA h            
+        JPS drawBox
+        INA x INA y
+        JPS drawBox
+
+        LDI 8 STA x         ; draw a checkmark in the box
+        LDI 8 STA y
+        LDI '+' STA c
+        JPS plot
+        INA x INA y
+        JPS plot
+        INA x INA y
+        JPS plot
+        INA x DEA y
+        JPS plot
+        INA x DEA y
+        JPS plot
+        INA x DEA y
+        JPS plot
+        INA x DEA y
+
+end:    NOP
+        JPA end
+
+;-----------------------------------------------------------------
+; Start Lib:
+;-----------------------------------------------------------------
+
+; Draws a "rectangle" of # Characters filled with Blanks at x,y with dimensions w,h
+; x = Chars from left
+; y = Chars from top
+; w = Width of The Box
+; h = height of the Box
+drawBox:        LDA x PHS LDA y PHS LDA w PHS LDA h PHS     ; Put Variables on Stack            
+                LDI 27 OUT LDI '[' OUT LDI 'H' OUT		    ; ESC sequence for "home"
+                LDA y STA a     ; Skip from Top
+drawBoxTLo:     LDA a
+                CPI 0 BEQ drawBoxL
+                DEA a        
+                LDI 10 OUT      ; Newline
+                JPA drawBoxTLo
+drawBoxL:       LDA x STA a     ; Skip from Left
+drawBoxLLo:     LDA a
+                CPI 0 BEQ drawBoxTLi
+                DEA a       
+                LDI 27 OUT LDI '[' OUT LDI 'C' OUT     ; Next Char
+                JPA drawBoxLLo
+drawBoxTLi:     LDA w STA a     ; Draw Top Line
+drawBoxTLiLo:   LDA a
+                CPI 0 BEQ drawBoxSi
+                DEA a       
+                LDI '#' OUT     ; A Pixel
+                JPA drawBoxTLiLo
+drawBoxSi:      LDA h STA b DEA b DEA b JPA drawBoxSiLo          ; Draw Sides
+drawBoxSiEnd:   LDI '#' OUT     ; The Pixel at the right End of the Box 
+drawBoxSiLo:    LDA b           ; b counts the height
+                CPI 0 BEQ drawBoxL3
+                DEA b        
+                LDI 10 OUT      ; Newline            
+                    LDA x STA a     ; For each side skip from Left
+drawBoxLLo2:        LDA a
+                    CPI 0 BEQ drawBoxTLi2
+                    DEA a       
+                    LDI 27 OUT LDI '[' OUT LDI 'C' OUT     ; Next Char
+                    JPA drawBoxLLo2
+drawBoxTLi2:        LDA w STA a DEA a DEA a     ; Draws first pixel and blanks till last pixel
+                    LDI '#' OUT
+drawBoxTLiLo2:      LDA a
+                    CPI 0 BEQ drawBoxSiEnd
+                    DEA a
+                    LDI ' ' OUT
+                    JPA drawBoxTLiLo2
+drawBoxL3:      LDI 10 OUT      ; Newline
+                LDA x STA a     ; Skip from Left for bottom Line
+drawBoxLLo3:    LDA a
+                CPI 0 BEQ drawBoxBL
+                DEA a       
+                LDI 27 OUT LDI '[' OUT LDI 'C' OUT     ; Next Char
+                JPA drawBoxLLo3
+drawBoxBL:      LDA w STA a     ; bottom Line
+drawBoxBLLo:    LDA a
+                CPI 0 BEQ drawBoxE
+                DEA a       
+                LDI '#' OUT     ; A Pixel
+                JPA drawBoxBLLo
+drawBoxE:       LDA x PLS LDA y PLS LDA w PLS LDA h PLS     ; Pull Variables of Stack 
+                RTS
+
+; Draws a "rectangle" of # Characters at x,y with dimensions w,h
+; x = Chars from left
+; y = Chars from top
+; c = Character to draw
+plot:           LDA x PHS LDA y PHS LDA c PHS       ; Put Variables on Stack            
+                LDI 27 OUT LDI '[' OUT LDI 'H' OUT  ; ESC sequence for "home"
+                LDA y STA a     ; Skip from Top
+plotTLo:        LDA a
+                CPI 0 BEQ plotL
+                DEA a        
+                LDI 10 OUT      ; Newline
+                JPA plotTLo
+plotL:          LDA x STA a     ; Skip from Left
+plotLLo:        LDA a
+                CPI 0 BEQ plotC
+                DEA a       
+                LDI 27 OUT LDI '[' OUT LDI 'C' OUT     ; Next Char
+                JPA plotLLo
+plotC:          LDA c OUT   ; Plots the Char
+                LDA x PLS LDA y PLS LDA c PLS   ; Pull Variables of Stack 
+                RTS
+
+*=$0100			; set PC back to programm start

@@ -1,0 +1,104 @@
+; Boolean Logic Operators
+; Some Routines for 8-Bit Logic
+; author reineckm
+
+;-----------------------------------------------------------------
+; Test / Demo Program - Lib starts after that
+*=$0000                         ; Registers like in 6502 zero page
+x: 0
+y: 0
+z: 0
+a: 0
+b: 0
+c: 0
+
+*=$0100	    		            ; code starts here
+            LDI $fe STA $7fff	; init stack
+start:  	LDI 27 OUT			; ESC sequence for "home"
+			LDI '[' OUT			
+			LDI 'H' OUT			
+			LDI 27 OUT			; ESC sequence for "clear screen"			
+			LDI '[' OUT			
+			LDI 'J' OUT
+            
+            LDI $35             
+            STA x
+            LDI $f3
+            STA y
+            JPS or              ; $35 || $f3 = 1111 0111
+            LDA z STA x JPS binOut
+            LDI 10 OUT          ; Newline
+            LDI $35
+            STA x
+            LDI $f3
+            STA y
+            JPS and             ; $35 && $f3 = 0011 0001
+            LDA z STA x JPS binOut
+            ; Result:
+            ; 1111 0111
+            ; 0011 0001
+            JPA end
+
+end:        NOP
+            JPA end
+
+;-----------------------------------------------------------------
+; Start Lib:
+;-----------------------------------------------------------------
+            
+; Bitwise OR 
+; z <- x OR y 
+or:         LDA x PHS LDA y PHS
+            CLA z               ; Clear Result
+            LDI 128 STA b       ; b counts down 128, 64... 1 
+orLoop:     CLA a
+            LDA y LSL STA y     ; Highest Bit set?
+            BCC orA             ; to next Operand if not set
+            LDI 1 STA a         ; b will be added to z
+orA:        LDA x LSL STA x     ; Highest Bit set? (can't be skipped)
+            BCC orB             ; to adding Step if not set
+            LDI 1 STA a         ; b will be added to z
+orB:        LDA a CPI 1
+            BNE orNoAdd
+            LDA z ADA b STA z   ; add z
+orNoAdd:    LDA b LSR STA b     ; b / 2
+            BNE orLoop
+            PLS STA y PLS STA x
+            RTS
+
+; Bitwise AND 
+; z <- x AND y 
+and:        LDA x PHS LDA y PHS
+            CLA z               ; Clear Result
+            LDI 128 STA b       ; b counts down 128, 64... 1 
+andLoop:    LDA y LSL STA y     ; y: Highest Bit set?
+            BCS andTestX        ; Test x if not set
+            LDA x LSL STA x     ; Rol x regardles
+            JPA andNext
+andTestX:   LDA x LSL STA x     ; Highest Bit set?
+            BCC andNext         ; skip adding if not set
+            LDA z ADA b STA z   ; add b to z
+andNext:    LDA b LSR STA b     ; b / 2
+            BNE andLoop
+            PLS STA y PLS STA x
+            RTS
+
+; Puts the Value of x in binary to screen
+; 
+binOut:     LDA x PHS
+            LDI 8 STA a         ; 8 Bits in a Byte               
+binOutLoop: LDA x
+            LSL                 ; sets Carry if MSB == 1
+            STA x               ; Next time test the next bit
+            BCS binOut1            ; Plot 1 is carry set
+            LDI '0'             ; else Plot 0
+            OUT
+            JPA binOutNext
+binOut1:    LDI '1'
+            OUT
+binOutNext: DEA a               ; Dec loopConter
+            BNE binOutLoop      ; loopCounter > 0 next iteration
+            PLS STA x
+            RTS
+
+*=$0100			; set PC back to programm start
