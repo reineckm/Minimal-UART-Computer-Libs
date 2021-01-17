@@ -6,7 +6,7 @@
 ;-----------------------------------------------------------------
 ; Test / Demo Program - Lib starts after that
 
-*=$0000                     ; Registers like in 6502 zero page
+*=$2000                     ; Registers like in 6502 zero page
 x: 0
 y: 0
 w: 0
@@ -15,7 +15,7 @@ a: 0
 b: 0
 c: 0
 
-*=$0100			            ; code starts here
+*=$2100			            ; code starts here
         LDI $fe STA $7fff	; init stack
 start:  LDI 27 OUT			; ESC sequence for "home"
         LDI '[' OUT			
@@ -137,4 +137,4 @@ plotC:          LDA c OUT   ; Plots the Char
                 LDA x PLS LDA y PLS LDA c PLS   ; Pull Variables of Stack 
                 RTS
 
-*=$0100			; set PC back to programm start
+*=$2100			; set PC back to programm start
